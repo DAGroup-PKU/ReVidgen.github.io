@@ -1,0 +1,2663 @@
+<html lang="en">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+    <meta name="description" content="Rethinking Video Foundation Model for the Embodied World
+   ">
+    <meta name="keywords" content="Video generation, Diffusion model">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#EDE8F5">
+    <meta property="og:image" content="">
+    <link rel="stylesheet" href="./assets/index.css">
+    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.6.2/css/bootstrap.min.css'>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <style>
+        @font-face {
+            font-family: 'Roboto';
+            font-style: normal;
+            font-stretch: 100%;
+            font-display: block;
+            font-weight: 300 700;
+            src: url('./assets/roboto.woff2') format('woff2');
+            unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+        }
+
+        @font-face {
+            font-family: 'DancingScript';
+            src: url('./assets/DancingScript-Bold.ttf') format('truetype');
+        }
+
+        @font-face {
+            font-family: 'Caveat';
+            src: url('./assets/Caveat-Medium.ttf') format('truetype');
+        }
+
+        @font-face {
+            font-family: 'Alegreya';
+            src: url('./assets/Alegreya-Regular.ttf') format('truetype');
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        .abstract-section {
+            padding: 40px 5% 20px 5%;
+            /* 上 40，下 20 */
+            margin-top: 40px;
+        }
+
+        .abstract-section+#teaser-section {
+            margin-top: 10px !important;
+        }
+
+
+        video {
+            background-color: #000000;
+            aspect-ratio: 16 / 9;
+        }
+
+        section.portrait video {
+            background-color: #000000;
+            aspect-ratio: 16 / 9;
+            object-fit: cover;
+        }
+
+        section.multi_ip video {
+            background-color: #000000;
+            aspect-ratio: 4 / 3;
+            object-fit: cover;
+        }
+
+        section.portrait .prompt-wrap.full-screen-wrap video {
+            object-fit: cover;
+        }
+
+        section.portrait .flex {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+            gap: 10px;
+        }
+
+        section.portrait2 .flex {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: flex-start;
+        }
+
+        section.portrait .flex>div {
+            flex: 0 0 calc((100% - 5 * 10px) / 6);
+        }
+
+        section.portrait2 .flex>div {
+            flex: 0 0 calc((100% - 1 * 10px) / 2);
+        }
+
+        section.portrait .prompt {
+            font-size: 10px;
+        }
+
+        section.portrait2 .prompt {
+            font-size: 12px;
+        }
+
+        section.portrait .flex-row {
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+        }
+
+        section.portrait2 .flex-row {
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+        }
+
+        @media (max-width: 768px) {
+            section.portrait .flex>div {
+                flex: 0 0 calc((100% - 1 * 10px) / 2);
+            }
+        }
+
+        @media (max-width: 768px) {
+            section.portrait2 .flex>div {
+                flex: 0 0 calc((100% - 0 * 10px) / 1);
+            }
+        }
+
+        /* Ensure prompt adjusts for portrait mode */
+        .portrait .prompt {
+            position: absolute;
+            /* Allow positioning relative to the container */
+            bottom: 5%;
+            /* Adjust this to control the vertical placement of the prompt */
+            left: 50%;
+            /* Center horizontally */
+            transform: translateX(-50%);
+            /* Offset by 50% of its width to truly center */
+            max-width: 80%;
+            text-align: center;
+            /* Center the text inside the prompt */
+            color: white;
+            /* Optional, if you want the text to stand out */
+            font-size: 1.2em;
+            /* Optional, adjust the text size */
+        }
+
+        .portrait2 .prompt {
+            position: absolute;
+            /* Allow positioning relative to the container */
+            bottom: 5%;
+            /* Adjust this to control the vertical placement of the prompt */
+            left: 50%;
+            /* Center horizontally */
+            transform: translateX(-50%);
+            /* Offset by 50% of its width to truly center */
+            max-width: 80%;
+            text-align: center;
+            /* Center the text inside the prompt */
+            color: white;
+            /* Optional, if you want the text to stand out */
+            font-size: 1.2em;
+            /* Optional, adjust the text size */
+        }
+
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            font-family: "Roboto", sans-serif;
+            padding: 0;
+            margin: 0;
+        }
+
+        #intro {
+            padding: 40px 0 20px 0;
+            justify-content: center;
+            text-align: center;
+            background: transparent;
+            color: #ffffff;
+            position: relative;
+            height: auto;
+            width: 100%;
+        }
+
+
+        #background-video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            /* 视频填充整个容器 */
+            z-index: -1;
+            /* 确保视频在内容后面 */
+            filter: brightness(0.3);
+            /* 调低亮度，使视频更暗 */
+        }
+
+        #intro h1 {
+            font-size: 90px;
+            font-weight: 300;
+            margin: 20px 0;
+        }
+
+        #intro h2 {
+            margin: 20px 0 40px 0;
+            font-weight: 300;
+            color: #ffffff
+        }
+
+        #intro h2 strong {
+            color: #fff;
+        }
+
+        .authors {
+            font-size: 16px;
+            font-weight: 500;
+            color: #ffffff;
+            text-align: center;
+            margin-bottom: 25px;
+            width: 80%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .author-block {
+            display: inline-block;
+            margin: 0 10px 0 10px;
+        }
+
+        .author-block a {
+            color: #ffffff;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .author-block a:hover {
+            color: #fff;
+        }
+
+        .author-affiliation {
+            font-size: 16px;
+            color: #ffffff;
+            text-align: center;
+            margin-bottom: 60px;
+            width: 80%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .author-affiliation .author-block {
+            display: inline-block;
+            margin: 0 15px;
+        }
+
+        section {
+            max-width: 1920px;
+            margin: 0 auto;
+        }
+
+        .content {
+            padding: 0 10%;
+        }
+
+        .button {
+            background-color: #ccc;
+            color: #000;
+            padding: 10px 20px;
+            border-radius: 100px;
+            cursor: pointer;
+            transition: background-color 0.5s;
+            text-decoration: none;
+            margin-right: 8px;
+            margin-bottom: 8px;
+            display: inline-block;
+        }
+
+        .button:hover {
+            background-color: #fff;
+        }
+
+        .bibtex-section {
+            background-color: #111;
+            padding: 40px 10%;
+            text-align: center;
+            margin-top: 60px;
+            color: #ccc;
+        }
+
+        .bibtex-section h3 {
+            font-size: 24px;
+            font-weight: 400;
+            color: #ccc;
+            margin-bottom: 20px;
+        }
+
+        .bibtex-code {
+            background-color: #222;
+            color: #ddd;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: left;
+            display: inline-block;
+            font-family: monospace;
+            max-width: 800px;
+            overflow-x: auto;
+        }
+
+        section:first-of-type {
+            margin-top: 0;
+        }
+
+        .title {
+            background-color: #000;
+            position: sticky;
+            top: 0;
+            padding: 20px 10%;
+            font-size: 20px;
+            font-weight: 600;
+            z-index: 1000;
+            min-height: 60px;
+            box-sizing: border-box;
+        }
+
+        .description {
+            padding: 0 10% 20px 10%;
+            color: #999;
+            line-height: 25px;
+            font-weight: 300;
+        }
+
+        .highlight {
+            color: #fff;
+            font-weight: 500;
+        }
+
+        .flex-row {
+            display: flex;
+            column-gap: 5px;
+            flex-wrap: nowrap;
+            justify-content: space-between;
+            padding: 0 5px 5px 5px;
+
+        }
+
+        .flex-row>div {
+            flex-grow: 1;
+            flex-basis: 0;
+            position: relative;
+        }
+
+        .flex>div {
+            width: calc(100% / 3 - 5px * 2 / 3);
+            margin-top: 2.5px;
+            margin-bottom: 2.5px;
+            position: relative;
+        }
+
+        .flex {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            padding: 0 5px;
+        }
+
+        .prompt-wrap {
+            position: relative;
+        }
+
+        .flex-2 {
+            justify-content: center;
+            column-gap: 5px;
+        }
+
+        .flex-2>div {
+            width: calc(100% / 2 - 5px / 2);
+            min-width: calc(100% / 3 - 5px * 2 / 3);
+            max-width: calc(100vh - 200px);
+        }
+
+        video,
+        img {
+            width: 100%;
+        }
+
+        .loading-placeholder {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            color: rgba(255, 255, 255, 0.6);
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .loading-text {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .loading-icon {
+            font-size: 48px;
+        }
+
+        .prompt {
+            max-width: calc(100% - 20px);
+            position: absolute;
+            background: rgba(0, 0, 0, 0.5);
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 10px;
+            backdrop-filter: blur(10px);
+            bottom: 10px;
+            left: 10px;
+            padding: 5px 10px;
+            border-radius: 15px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+            box-sizing: border-box;
+        }
+
+        .flex-very-compact .full-screen-button {
+            width: 100%;
+            height: 100%;
+            top: 0;
+            right: 0;
+            border-radius: 0;
+        }
+
+        .chinese {
+            font-family: 'Noto Sans SC', sans-serif;
+            font-weight: bold;
+            color: #d18585;
+            font-size: 1.1em;
+        }
+
+        @media (hover: hover) {
+
+            .prompt-wrap:hover .prompt,
+            .full-screen-wrap:hover .full-screen-button {
+                opacity: 1;
+                pointer-events: all;
+            }
+
+            #contributors a:hover {
+                background-color: #222;
+            }
+        }
+
+        @media (hover: none) {
+            #contributors a {
+                pointer-events: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .flex-dynamic>div {
+                width: calc(100% / 2 - 5px / 2);
+            }
+        }
+
+        @media (max-width: 640px) {
+            #intro h1 {
+                font-size: 50px;
+            }
+
+            #intro h2 {
+                font-size: 20px;
+            }
+
+            .ruler {
+                font-size: 10px;
+            }
+        }
+
+        @media (max-width: 512px) {
+
+            .flex-dynamic>div,
+            .flex-dynamic-1>div {
+                width: 100%;
+            }
+
+            .content {
+                padding: 0 12px;
+            }
+
+            .description {
+                padding: 0 12px 20px 12px;
+            }
+
+            .title {
+                padding: 20px 12px;
+            }
+
+            .ruler-tight {
+                font-size: 6px;
+                column-gap: 0;
+            }
+
+            .title-long {
+                font-size: 16px;
+            }
+
+        }
+
+        .margin-top {
+            margin-top: 50px;
+        }
+
+        .ruler {
+            text-align: center;
+            position: sticky;
+            top: 60px;
+            z-index: 999;
+            background-color: #000;
+            color: #999;
+            padding: 5px 0;
+        }
+
+        .ruler>div {
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .selected {
+            box-shadow: 0 0 0 5px #fff;
+        }
+
+        #title-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #title-icon {
+            height: 8em;
+            width: auto;
+            margin-right: 0px;
+            vertical-align: middle;
+        }
+
+        .title-art {
+            font-family: 'DancingScript', sans-serif;
+        }
+
+        .title-art2 {
+            font-family: 'Caveat', sans-serif;
+
+            background: linear-gradient(90deg,
+                    #dc2626,
+                    #ffffff,
+                    #6692f1);
+
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: transparent;
+        }
+
+
+        .title-art3 {
+            font-family: 'Alegreya', sans-serif;
+        }
+
+        h2 {
+            font-size: 2.5em;
+            color: rgb(255, 255, 255);
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        #video-wrapper {
+            border-radius: 50px;
+            max-width: 720px;
+            padding-bottom: 40%;
+            margin: 0 auto;
+            background: #000000;
+        }
+
+        .ethics-section {
+            padding: 100px 10%;
+            text-align: center;
+            margin-top: 60px;
+            color: #ccc;
+            max-width: 1500px;
+            margin: 0 auto;
+        }
+
+        .acknowledgements-section {
+            padding: 100px 10%;
+            text-align: center;
+            margin-top: 60px;
+            color: #ccc;
+            max-width: 1500px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="main-content">
+        <!-- Your whole original webpage content goes below this -->
+
+
+
+        <!-- 全局背景视频 -->
+        <style>
+            /* 全局背景视频 */
+            #background-video {
+                position: fixed;
+                top: 0;
+                left: 0;
+
+                width: 100vw;
+                height: 100vh;
+
+                object-fit: cover;
+                z-index: -1;
+                pointer-events: none;
+                opacity: 0.85;
+            }
+        </style>
+        <video autoplay muted loop id="background-video">
+            <source src="./videos/0_grid_output.mp4" type="video/mp4">
+        </video>
+        <!-- ====================== -->
+        <!--   Intro  -->
+        <!-- ====================== -->
+        <section id="intro">
+
+            <div class="content">
+                <!-- <div id="title-container">
+                    <img id="title-icon" src="./assets/icon-new.png" alt="Icon">
+                </div> -->
+                <h2 class="title-art2" style="font-size:4.5rem; line-height:1.15;">
+                    Rethinking Video Generation Model for the Embodied World
+                </h2>
+
+                <div class="authors">
+                    <span class="author-block" style="font-size: 20px;">
+                        <a href="https://github.com/DAGroup-PKU/ReVidgen/">
+                            Yufan Deng<sup>1,2,*</sup>
+                        </a>
+                    </span>
+                    <span class="author-block" style="font-size: 20px;">
+                        <a href="https://github.com/DAGroup-PKU/ReVidgen/">
+                            Zilin Pan<sup>1,*</sup>
+                        </a>
+                    </span>
+                    <span class="author-block" style="font-size: 20px;">
+                        <a href="https://github.com/DAGroup-PKU/ReVidgen/">
+                            Hongyu Zhang<sup>1,*</sup>
+                        </a>
+                    </span>
+                    <span class="author-block" style="font-size: 20px;">
+                        <a href="https://github.com/DAGroup-PKU/ReVidgen/">
+                            Xiaojie Li<sup>2</sup>
+                        </a>
+                    </span>
+                    <span class="author-block" style="font-size: 20px;">
+                        <a href="https://github.com/DAGroup-PKU/ReVidgen/">
+                            Ruoqing Hu<sup>2</sup>
+                        </a>
+                    </span>
+                    <br />
+                    <span class="author-block" style="font-size: 20px;">
+                        <a href="https://selina2023.github.io/">
+                            Yufei Ding<sup>1</sup>
+                        </a>
+                    </span>
+                    <span class="author-block" style="font-size: 20px;">
+                        <a href="https://github.com/DAGroup-PKU/ReVidgen/">
+                            Yiming Zou<sup>1</sup>
+                        </a>
+                    </span>
+                    <span class="author-block" style="font-size: 20px;">
+                        <a href="https://scholar.google.com/citations?user=-zT0sBsAAAAJ&hl=zh-CN">
+                            Yan Zeng<sup>2</sup>
+                        </a>
+                    </span>
+                    <span class="author-block" style="font-size: 20px;">
+                        <a href="https://zhoudaquan.github.io/homepage.io/">
+                            Daquan Zhou<sup>1</sup>
+                        </a>
+                    </span>
+                </div>
+
+
+                <!-- Added the affiliations section -->
+                <div class="author-affiliation" style="font-size: 25px; font-family: 'Times New Roman', sans-serif;">
+                    <p>
+                        <sup>1</sup> Peking University &nbsp;&nbsp;
+                        <sup>2</sup> ByteDance Seed
+                    </p>
+                </div>
+
+
+                <a class="button" href="https://github.com/DAGroup-PKU/ReVidgen/" target="_blank"
+                    rel="noopener noreferrer">
+                    <i class="fa-brands fa-github" style="font-size:17px; margin-right:6px;"></i>
+                    GitHub
+                </a>
+
+                <a class="button" href="https://dagroup-pku.github.io/ReVidgen.github.io/" target="_blank"
+                    rel="noopener noreferrer">
+                    <i class="fa-regular fa-file-lines" style="font-size:17px; margin-right:6px;"></i>
+                    Research Paper
+                </a>
+
+                <a class="button" href="https://dagroup-pku.github.io/ReVidgen.github.io/" target="_blank"
+                    rel="noopener noreferrer">
+                    <i class="fa-solid fa-house" style="font-size:17px; margin-right:6px;"></i>
+                    Project
+                </a>
+
+                <a class="button" href="https://huggingface.co/datasets/DAGroup-PKU/RoVid-X" target="_blank"
+                    rel="noopener noreferrer">
+                    <i class="fa-solid fa-database" style="font-size:17px; margin-right:6px;"></i>
+                    Datasets
+                </a>
+
+                <a class="button" href="https://huggingface.co/datasets/DAGroup-PKU/RBench" target="_blank"
+                    rel="noopener noreferrer">
+                    <i class="fa-solid fa-face-smile" style="font-size:17px; margin-right:6px;"></i>
+                    Benchmark
+                </a>
+
+
+                <a class="button" href="https://huggingface.co/spaces/DAGroup-PKU/RBench-Leaderboard" target="_blank"
+                    rel="noopener noreferrer">
+                    <i class="fa-solid fa-trophy" style="font-size:17px; margin-right:6px;"></i>
+                    Leaderboard
+                </a>
+
+
+                <a class="button" href="https://www.youtube.com/watch?v=8yf1qQIpROw" target="_blank" rel="noopener noreferrer">
+                    <i class="fa-brands fa-youtube" style="font-size:17px; margin-right:6px;"></i>
+                    Video
+                </a>
+
+
+            </div>
+
+        </section>
+
+        <!-- 文本标题 -->
+        <div class="container text-center" style="margin-top: 50px;">
+            <p class="title-art3" style="font-size: 1.6em;">An Introductory Demo Video Showcasing Our Work
+            </p>
+        </div>
+
+
+        <!-- 视频主体 -->
+        <div id="video-demo" class="show-neighbors"
+            style="display: flex; justify-content: center; flex-direction: column; margin-top: 30px; margin-bottom: 40px;">
+            <div style="display: flex; justify-content: center;">
+                <div style="
+     border: 4px solid #ffffff44;
+     border-radius: 2vmin;
+     padding: 8px;
+     background: #1c1c1c;
+     box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+     ">
+                    <video src="./assets/video_demo.mp4" playsinline controls style="
+         width: 90vw;
+         max-width: 1000px;
+         aspect-ratio: 16 / 10;
+         object-fit: contain;
+         border-radius: 2vmin;
+         background: black;
+         display: block;
+         "></video>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================= -->
+        <!--   Abstract Section    -->
+        <!-- ========================= -->
+
+        <section class="acknowledgements-section abstract-section">
+            <div style="
+        max-width: 1400px;
+        margin: 0 auto;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        padding: 40px;
+        background-color: rgba(255, 255, 255, 0.05);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(4px);
+    ">
+                <h3 style="
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            color: white;
+        ">
+                    Abstract
+                </h3>
+
+                <p style="
+            font-size: 1.05rem;
+            line-height: 1.6;
+            color: white;
+            text-align: left;
+            text-indent: 2em;
+        ">
+                    Video generation models have significantly advanced embodied intelligence, unlocking new possibilities for generating diverse robot data that capture perception, reasoning, and action in the physical world. 
+            However, synthesizing high-quality videos that accurately reflect real-world robotic interactions remains challenging, and the lack of a standardized benchmark limits fair comparisons and progress.
+            To address this gap, we introduce a comprehensive robotics benchmark, RBench, designed to evaluate robot-oriented video generation across five task domains and four distinct embodiments.
+            It assesses both task-level correctness and visual fidelity through reproducible sub-metrics, including structural consistency, physical plausibility, and action completeness.
+            Evaluation of 25 representative models highlights significant deficiencies in generating physically realistic robot behaviors. 
+            Furthermore, the benchmark achieves a Spearman correlation coefficient of 0.96 with human evaluations, validating its effectiveness.
+            While RBench provides the necessary lens to identify these deficiencies, achieving physical realism requires moving beyond evaluation to address the critical shortage of high-quality training data. 
+            Driven by these insights, we introduce a refined four-stage data pipeline, resulting in RoVid-X, the largest open-source robotic dataset for video generation with 4 million annotated video clips, covering thousands of tasks and enriched with comprehensive physical property annotations.
+            Collectively, this synergistic ecosystem of evaluation and data establishes a robust foundation for rigorous assessment and scalable training of video models, accelerating the evolution of embodied AI toward general intelligence.
+                </p>
+            </div>
+        </section>
+
+        <!-- ========================= -->
+        <!--   Teaser Image Section    -->
+        <!-- ========================= -->
+
+        <section id="teaser-section" style="margin: 10px auto 40px auto; padding: 0 20px;">
+
+            <h3 style="text-align:center; color:white; font-size: 2rem; margin-bottom: 20px;">
+                Overview of RBench and RoVid-X
+            </h3>
+
+            <p style="
+        color: #ccc;
+        font-size: 1.1rem;
+        line-height: 1.6;
+        text-align: left;
+        text-indent: 2em;
+        max-width: 1000px;
+        margin: 0 auto 25px auto;
+    ">
+
+            </p>
+
+            <!-- Teaser Image -->
+            <div style="
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        border-radius: 12px;
+    ">
+                <img src="./png/Fig1_teaser.png" alt="Teaser Figure" style="
+                width: 100%;
+                max-width: 1100px;
+                border-radius: 10px;
+                box-shadow: 0 0 20px rgba(255,255,255,0.1);
+             ">
+            </div>
+
+        </section>
+
+
+
+        <!-- ========================================================== -->
+        <!--  RoVidX-4M Table         -->
+        <!-- ========================================================== -->
+        <style>
+            /* ----------------------------- TABLE ------------------------------- */
+            /* 绿色 ✓ */
+            .check {
+                color: #6cff6c;
+                font-weight: bold;
+            }
+
+            /* 红色 ✗ */
+            .cross {
+                color: #ff6c6c;
+                font-weight: bold;
+            }
+
+            /* 让表格所有单元格居中 */
+            .dataset-table-section table th,
+            .dataset-table-section table td {
+                text-align: center;
+                vertical-align: middle;
+                padding: 10px;
+            }
+
+            /* 表格基本样式 */
+            .dataset-table-section table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 15px;
+                color: white;
+            }
+
+            .dataset-table-section th {
+                border-bottom: 2px solid #666;
+                font-weight: 600;
+            }
+
+            .dataset-table-section tbody tr {
+                border-bottom: 1px solid #333;
+            }
+
+            /* 高亮 Ours */
+            .dataset-ours {
+                background-color: rgba(100, 150, 255, 0.2);
+                font-weight: bold;
+            }
+        </style>
+
+
+        <!-- ========================================================== -->
+        <!--  R-Bench Qualitative Results        -->
+        <!-- ========================================================== -->
+        <style>
+            /* Task buttons */
+            .task-selector {
+                text-align: center;
+                margin-bottom: 25px;
+            }
+
+            .task-selector button {
+                background: #222;
+                color: #fff;
+                border: 1px solid #555;
+                padding: 10px 18px;
+                margin: 5px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 16px;
+                transition: 0.3s;
+            }
+
+            .task-selector button:hover {
+                background: #444;
+            }
+
+            .task-selector .active {
+                background: #0066ff;
+                border-color: #3399ff;
+            }
+
+            /* Case switch buttons */
+            .case-switcher {
+                text-align: center;
+                margin-bottom: 15px;
+            }
+
+            .case-switcher button {
+                background: #111;
+                color: #fff;
+                border: 1px solid #444;
+                padding: 6px 15px;
+                margin: 0 15px;
+                border-radius: 6px;
+                font-size: 16px;
+                cursor: pointer;
+            }
+
+            .case-switcher button:hover {
+                background: #333;
+            }
+
+            /* Video grid */
+            .video-grid {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 18px;
+                max-width: 1400px;
+                margin: 0 auto;
+            }
+
+            .video-item {
+                position: relative;
+            }
+
+            .video-item video {
+                width: 100%;
+                border-radius: 12px;
+                border: 2px solid #333;
+            }
+
+            .video-title {
+                position: absolute;
+                top: 8px;
+                left: 8px;
+                background: rgba(0, 0, 0, 0.55);
+                padding: 4px 10px;
+                border-radius: 6px;
+                color: #fff;
+                font-size: 14px;
+                font-weight: 600;
+                pointer-events: none;
+            }
+
+            #task-prompt {
+                text-align: center;
+                color: #ccc;
+                margin-top: 25px;
+                font-size: 18px;
+                font-style: italic;
+                padding-bottom: 40px;
+            }
+
+            /* Wrapper to hold left/right buttons + videos */
+            .video-wrapper {
+                position: relative;
+                width: 100%;
+                max-width: 1500px;
+                margin: 0 auto;
+            }
+
+            /* Left/right case buttons */
+            .case-btn {
+                position: absolute;
+                top: 50%;
+                transform: translateY(-50%);
+                background: rgba(0, 0, 0, 0.45);
+                color: white;
+                border: none;
+                font-size: 42px;
+                padding: 10px 16px;
+                cursor: pointer;
+                border-radius: 8px;
+                transition: 0.25s;
+                z-index: 20;
+            }
+
+            .case-btn:hover {
+                background: rgba(0, 0, 0, 0.75);
+            }
+
+            .left-btn {
+                left: -60px;
+                /* 位置可调 */
+            }
+
+            .right-btn {
+                right: -60px;
+                /* 位置可调 */
+            }
+
+            .case-header {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                justify-content: center;
+                /* ⭐ 强制内容整体居中 */
+
+                gap: 40px;
+
+                width: 100%;
+                max-width: 1500px;
+                /* ⭐ 与视频区域对齐 */
+                margin: 0 auto 35px auto;
+                /* ⭐ 居中 */
+
+                padding: 10px 20px;
+            }
+
+            .case-header img {
+                width: 260px;
+                border-radius: 12px;
+                border: 2px solid #333;
+            }
+
+            .case-header .prompt-box {
+                flex: 1;
+                max-width: 700px;
+                /* ⭐ 限制宽度使其居中视觉更平衡 */
+                text-align: left;
+                font-size: 18px;
+                line-height: 1.5;
+                color: #ddd;
+            }
+        </style>
+
+        <section id="task-demo" style="margin-top:80px;">
+
+            <h3 style="text-align:center; font-size:2rem; color:white; margin-bottom:20px;">
+                Task-wise Model Comparison
+            </h3>
+
+            <!-- Task buttons -->
+            <div class="task-selector">
+                <button class="task-btn active" data-task="multi_entity_collaboration">Multi-Entity
+                    Collaboration</button>
+                <button class="task-btn" data-task="visual_reasoning">Visual Reasoning</button>
+                <button class="task-btn" data-task="long_horizon_planning">Long-Horizon Planning</button>
+                <button class="task-btn" data-task="spatial_relationship">Spatial Relationship</button>
+                <button class="task-btn" data-task="common_manipulation">Common Manipulation</button>
+            </div>
+            <div id="case-header" class="case-header"></div>
+
+
+            <!-- NEW: Case switch buttons -->
+            <div class="video-wrapper">
+
+                <button id="prev-case" class="case-btn left-btn">❮</button>
+
+                <div id="video-container" class="video-grid"></div>
+
+                <button id="next-case" class="case-btn right-btn">❯</button>
+
+            </div>
+
+
+        </section>
+
+        <script>
+            /* Models: 12 models in specified order */
+            const models = {
+                wan2_6: "Wan 2.6",
+                kling2_6: "Kling 2.6 Pro",
+                veo3: "Veo 3",
+                seedance1_5: "Seedance 1.5 Pro",
+                sora: "Sora 1.0",
+                hailuo: "Hailuo v2",
+                longcat: "LongCat-Video",
+                hunyuan1_5: "HunyuanVideo 1.5",
+                cosmos2_5: "Cosmos 2.5",
+                dreamgen_gr1: "DreamGen",
+                ltx2: "LTX-2",
+                cogvideox: "CogVideoX 5B"
+            };
+
+            /* Prompts: Each task has 3 cases */
+            const prompts = {
+                visual_reasoning: {
+                    1:
+                        'The left robotic gripper places the cup under the ' +
+                        '<span style="color:#00aaff; font-weight:bold;">white dispenser labeled “Jasmine Tea”</span>, ' +
+                        'and the right robotic gripper opens the dispenser to pour jasmine tea into the cup.',
+
+                    2:
+                        'The single-arm robot picks up the ' +
+                        '<span style="color:#00aaff; font-weight:bold;">blue piece of clothing</span> from the floor ' +
+                        'and places it into the ' +
+                        '<span style="color:#00cc66; font-weight:bold;">hollow laundry basket</span>.',
+
+                    3:
+                        'The humanoid robot picks up the ' +
+                        '<span style="color:#ff8800; font-weight:bold;">tallest orange object</span> ' +
+                        'and places it into the basket.'
+                },
+
+                long_horizon_planning: {
+                    1:
+                        'The humanoid robot ' +
+                        '<span style="color:#ff4444; font-weight:bold;">performs a short dance</span>, ' +
+                        '<span style="color:#00aaff; font-weight:bold;">claps its hands</span>,' +
+                        'and then <span style="color:#00cc66; font-weight:bold;">bends forward gracefully to bow</span>.',
+
+                    2:
+                        'The humanoid robot ' +
+                        '<span style="color:#ff4444; font-weight:bold;">picks up the plate</span>, ' +
+                        '<span style="color:#00aaff; font-weight:bold;">places it in the sink</span>, ' +
+                        'and <span style="color:#00cc66; font-weight:bold;">turns on the faucet</span>.',
+
+                    3:
+                        'The robotic grippers ' +
+                        '<span style="color:#00aaff; font-weight:bold;">rinse the spoon under running water</span>, ' +
+                        '<span style="color:#00cc66; font-weight:bold;">place it in the container on the right</span>, ' +
+                        'and then <span style="color:#ff4444; font-weight:bold;">turn off the faucet</span>.'
+                },
+
+                spatial_relationship: {
+                    1:
+                        'The robotic gripper picks up the cup and places it <span style="color:#00aaff; font-weight:bold;">onto</span> the plate.',
+
+                    2:
+                        'The robot dog walks to the ' +
+                        '<span style="color:#ff4444; font-weight:bold;">right</span>, stepping over the rocks, ' +
+                        'and moves to the <span style="color:#ff4444; font-weight:bold;">right</span> side of the human.',
+
+                    3:
+                        'The robotic hands pick up the bok choy and place it to the ' +
+                        '<span style="color:#00cc66; font-weight:bold;">left</span> of the frying pan.'
+                },
+
+                common_manipulation: {
+                    1:
+                        'The dual robotic grippers cooperate to ' +
+                        '<span style="color:#00aaff; font-weight:bold;">paint</span> the wall using the brush.',
+
+                    2:
+                        'The humanoid robot <span style="color:#00aaff; font-weight:bold;">picks up</span> the tissue from the table ' +
+                        'and <span style="color:#ff4444; font-weight:bold;">throws</span> it into the trash bin.',
+
+                    3:
+                        'The robotic gripper <span style="color:#00aaff; font-weight:bold;">opens</span> the lid of the pot ' +
+                        'and <span style="color:#ff4444; font-weight:bold;">places</span> it on the table.'
+                },
+
+                multi_entity_collaboration: {
+                    1:
+                        'A <span style="color:#ff8800; font-weight:bold;">yellow quadruped robot</span> steps down one stair and extends its mechanical arm toward a ' +
+                        '<span style="color:#ffcc00; font-weight:bold;">woman in a yellow jacket</span>, ' +
+                        'and the woman reaches out to shake its hand.',
+
+                    2:
+                        'The <span style="color:#00aaff; font-weight:bold;">man</span> hands a bunch of asparagus to the ' +
+                        '<span style="color:#ff4444; font-weight:bold;">robot</span>, which takes it and places the asparagus into the frying pan.',
+
+                    3:
+                        '<span style="color:#00aaff; font-weight:bold;">The robot on the left</span> hands the bag to ' +
+                        '<span style="color:#ff4444; font-weight:bold;">the robot on the right</span>, who opens the refrigerator, takes the bag, and places it inside.'
+                }
+            };
+
+
+            /* State variables */
+            let currentTask = "multi_entity_collaboration";
+            let currentCase = 2;  // 1,2,3
+
+            /* Load videos */
+            function loadTask(taskName) {
+                currentTask = taskName;
+                updateCaseDisplay();
+            }
+
+            function updateCaseDisplay() {
+                /* ==== 1. 更新上方的首帧 + prompt ==== */
+                const header = document.getElementById("case-header");
+
+                const caseStr = String(currentCase).padStart(3, "0");
+                const firstFramePath = `./initial_frames/${currentTask}${caseStr}.jpg`;
+                // 你可改为 .png 或自定义路径
+
+                header.innerHTML = `
+                    <img src="${firstFramePath}" alt="First Frame">
+                    <div class="prompt-box">
+                        ${prompts[currentTask][currentCase]}
+                    </div>
+                `;
+
+                /* ==== 2. 更新12模型的视频显示 ==== */
+                const container = document.getElementById("video-container");
+                container.innerHTML = "";
+
+                Object.keys(models).forEach(modelKey => {
+                    const modelName = models[modelKey];
+                    const caseStr = String(currentCase).padStart(3, "0");
+
+                    const videoPath = `./videos/${modelKey}_${currentTask}${caseStr}.mp4`;
+
+                    const item = document.createElement("div");
+                    item.className = "video-item";
+
+                    item.innerHTML = `
+                <div class="video-title">${modelName}</div>
+                <video autoplay muted playsinline loop>
+                    <source src="${videoPath}" type="video/mp4">
+                </video>
+            `;
+
+                    container.appendChild(item);
+                });
+
+                document.getElementById("case-indicator").innerHTML =
+                    `Case ${currentCase} / 3`;
+            }
+
+            /* Task buttons */
+            document.querySelectorAll(".task-btn").forEach(btn => {
+                btn.addEventListener("click", function () {
+                    document.querySelectorAll(".task-btn").forEach(b => b.classList.remove("active"));
+                    this.classList.add("active");
+
+                    currentCase = 1;  // reset when switching task
+                    loadTask(this.dataset.task);
+                });
+            });
+
+            /* Case switching buttons */
+            document.getElementById("prev-case").addEventListener("click", () => {
+                currentCase = currentCase === 1 ? 3 : currentCase - 1;
+                updateCaseDisplay();
+            });
+
+            document.getElementById("next-case").addEventListener("click", () => {
+                currentCase = currentCase === 3 ? 1 : currentCase + 1;
+                updateCaseDisplay();
+            });
+
+            /* Load default task + case */
+            loadTask("multi_entity_collaboration");
+        </script>
+
+        <!-- ========================================================== -->
+        <!--  NEW SECTION: 4 Embodiments Qualitative Results            -->
+        <!-- ========================================================== -->
+
+        <section id="embodiment-demo" style="margin-top:80px;">
+
+            <h3 style="text-align:center; font-size:2rem; color:white; margin-bottom:20px;">
+                Embodiment-wise Model Comparison
+            </h3>
+
+            <!-- Embodiment buttons -->
+            <div class="task-selector">
+                <button class="emb-btn active" data-emb="humanoid">Humanoid Robot</button>
+                <button class="emb-btn" data-emb="dual">Dual-Arm Robot</button>
+                <button class="emb-btn" data-emb="single">Single-Arm Robot</button>
+                <button class="emb-btn" data-emb="quad">Quadruped Robot</button>
+            </div>
+
+            <div id="emb-case-header" class="case-header"></div>
+
+            <!-- Wrapper for arrows and video grid -->
+            <div class="video-wrapper">
+
+                <button id="emb-prev" class="case-btn left-btn">❮</button>
+
+                <div id="emb-video-container" class="video-grid"></div>
+
+                <button id="emb-next" class="case-btn right-btn">❯</button>
+
+            </div>
+
+        </section>
+
+        <script>
+            /* Models: use same dictionary */
+            const emb_models = {
+                wan2_6: "Wan 2.6",
+                kling2_6: "Kling 2.6 Pro",
+                veo3: "Veo 3",
+                seedance1_5: "Seedance 1.5 Pro",
+                sora: "Sora 1.0",
+                hailuo: "Hailuo v2",
+                longcat: "LongCat-Video",
+                hunyuan1_5: "HunyuanVideo 1.5",
+                cosmos2_5: "Cosmos 2.5",
+                dreamgen_gr1: "DreamGen",
+                ltx2: "LTX-2",
+                cogvideox: "CogVideoX 5B"
+            };
+
+            /* ===== Embodiment prompts ===== */
+            const emb_prompts = {
+                dual: {
+                    1: "The robotic hands picks up the white pen with a blue cap and places it into the black mesh pen holder.",
+                    2: "The robotic arms turn on the faucet and fill the glass with water.",
+                    3: "The robotic arms pour water from the bottle into the cup."
+                },
+
+                humanoid: {
+                    1: "The humanoid robot picks up the bottle of milk from the refrigerator using its robotic hand.",
+                    2: "The humanoid robot places the black crate onto the storage rack.",
+                    3: "The humanoid robot turns left and ascends the stairs."
+                },
+
+                quad: {
+                    1: "The quadruped robot performs a patrol in the industrial environment to inspect the area.",
+                    2: "The quadruped robot uses its arm to push the door open.",
+                    3: "The quadruped robot climbs up the stairs holding an orange cable."
+                },
+
+                single: {
+                    1: "The single-arm robot picks up the gray clothing item from the basket and places it into the washing machine.",
+                    2: "The single-arm robot picks up the empty plastic cup on the table.",
+                    3: "The single-arm robot closes the drawer of the black cabinet."
+                }
+            };
+
+
+            /* State */
+            let currentEmb = "humanoid";
+            let currentEmbCase = 1;
+
+            function loadEmbodiment(emb) {
+                currentEmb = emb;
+                updateEmbDisplay();
+            }
+            function updateEmbDisplay() {
+
+                /* ====== 1. 更新顶部首帧 + prompt ====== */
+                const header = document.getElementById("emb-case-header");
+
+                const caseStr = String(currentEmbCase).padStart(3, "0");
+                const firstFramePath = `./initial_frames/${currentEmb}${caseStr}.jpg`;
+
+                header.innerHTML = `
+    <img src="${firstFramePath}" alt="Emb First Frame">
+    <div class="prompt-box">
+        ${emb_prompts[currentEmb][currentEmbCase]}
+    </div>
+`;
+
+
+                /* ====== 2. 更新12个模型的视频 ====== */
+                const container = document.getElementById("emb-video-container");
+                container.innerHTML = "";
+
+                Object.keys(emb_models).forEach(mkey => {
+                    const modelName = emb_models[mkey];
+                    const videoPath = `./videos/${mkey}_${currentEmb}${caseStr}.mp4`;
+
+                    const item = document.createElement("div");
+                    item.className = "video-item";
+
+                    item.innerHTML = `
+        <div class="video-title">${modelName}</div>
+        <video autoplay muted playsinline loop>
+            <source src="${videoPath}" type="video/mp4">
+        </video>
+    `;
+
+                    container.appendChild(item);
+                });
+            }
+
+            /* Embodiment button events */
+            document.querySelectorAll(".emb-btn").forEach(btn => {
+                btn.addEventListener("click", function () {
+                    document.querySelectorAll(".emb-btn").forEach(b => b.classList.remove("active"));
+                    this.classList.add("active");
+
+                    currentEmbCase = 1;
+                    loadEmbodiment(this.dataset.emb);
+                });
+            });
+
+            /* Case switching */
+            document.getElementById("emb-prev").addEventListener("click", () => {
+                currentEmbCase = currentEmbCase === 1 ? 3 : currentEmbCase - 1;
+                updateEmbDisplay();
+            });
+
+            document.getElementById("emb-next").addEventListener("click", () => {
+                currentEmbCase = currentEmbCase === 3 ? 1 : currentEmbCase + 1;
+                updateEmbDisplay();
+            });
+
+            /* Initial load */
+            loadEmbodiment("humanoid");
+        </script>
+
+        <!-- ========================================================== -->
+        <!--  RBench Quantitative Results Table         -->
+        <!-- ========================================================== -->
+
+        <style>
+            /* =============================== */
+            /*   RBench Table Header Styling  */
+            /* =============================== */
+
+            /* 一级表头：Models / Rank / Avg. / Tasks / Embodiments */
+            .rbench-table thead tr:first-child th {
+                font-size: 20px;
+                font-weight: 1000;
+                color: white;
+                padding-top: 12px;
+                padding-bottom: 12px;
+                border-bottom: 2px solid #666;
+            }
+
+            /* 二级表头：各子项（Manipulation ... Humanoid） */
+            .rbench-table thead tr:nth-child(2) th {
+                font-size: 16px;
+                font-weight: 900;
+                color: #eee;
+                padding-top: 8px;
+                padding-bottom: 8px;
+            }
+
+
+            /* 表头分组背景：Models / Rank / Avg. + Tasks + Embodiments */
+            .rbench-table thead tr:first-child th[colspan],
+            .rbench-table thead tr:first-child th:nth-child(-n+3) {
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 6px;
+            }
+
+
+            /* ===== Table Base Styling ===== */
+            .rbench-table {
+                width: 100%;
+                border-collapse: collapse;
+                color: #ffffff;
+                font-size: 14px;
+                margin: 0 auto;
+            }
+
+            .rbench-table th,
+            .rbench-table td {
+                text-align: center;
+                padding: 10px 6px;
+                border-bottom: 1px solid #333;
+            }
+
+            /* Category row (Open-source / Commercial / Robotics-specific) */
+            .rbench-category {
+                background-color: rgba(180, 210, 255, 0.22);
+                font-weight: 800;
+                /* 加粗 */
+                text-align: left !important;
+                /* 左对齐 */
+                font-size: 16px;
+                /* 可选：让分类标题更明显 */
+                padding-left: 8px;
+                /* 可选：加点左边距更美观 */
+            }
+
+            /* Top rank highlight */
+            .top1 {
+                background-color: rgba(0, 255, 0, 0.35);
+                font-weight: bold;
+            }
+
+            .top2 {
+                background-color: rgba(100, 255, 100, 0.25);
+                font-weight: bold;
+            }
+
+            .top3 {
+                background-color: rgba(150, 255, 150, 0.20);
+                font-weight: bold;
+            }
+
+            /* Sub-metric highlight */
+            .sub1 {
+                background-color: rgba(180, 180, 180, 0.35);
+            }
+
+            /* Horizontal scroll */
+            .rbench-wrapper {
+                overflow-x: auto;
+                margin-top: 40px;
+                padding-bottom: 10px;
+                border-radius: 8px;
+            }
+
+            .rbench-card {
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.18);
+                border-radius: 14px;
+
+                padding: 0px 20px 18px 20px;
+                margin-top: 18px;
+
+                backdrop-filter: blur(6px);
+                -webkit-backdrop-filter: blur(6px);
+
+                box-shadow:
+                    0 8px 30px rgba(0, 0, 0, 0.35),
+                    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+            }
+        </style>
+
+        <section id="rbench-results" style="max-width: 1300px; margin: 80px auto;">
+
+            <h3 style="text-align:center; font-size:2rem; color:white; margin-bottom: 12px;">
+                RBench Quantitative Results
+            </h3>
+
+            <p style="text-align:center; color:#ccc; max-width:900px; margin:0 auto 25px;">
+                Evaluations across task-oriented and embodiment-specific dimensions for 25 models from open-source,
+                commercial, and robotics-specific families. The "Avg." column shows the mean score across nine
+                indicators.
+            </p>
+
+            <div class="rbench-card">
+                <div class="rbench-wrapper">
+                    <table class="rbench-table">
+                        <thead>
+                            <tr>
+                                <th>Models</th>
+                                <th>Rank</th>
+                                <th>Avg.</th>
+                                <th colspan="5">Tasks</th>
+                                <th colspan="4">Embodiments</th>
+                            </tr>
+
+                            <tr>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th>Manipulation</th>
+                                <th>Spatial</th>
+                                <th>Multi-entity</th>
+                                <th>Long-horizon</th>
+                                <th>Reasoning</th>
+                                <th>Single arm</th>
+                                <th>Dual arm</th>
+                                <th>Quadruped</th>
+                                <th>Humanoid</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            <!-- ====================== OPEN SOURCE ====================== -->
+                            <tr class="rbench-category">
+                                <td colspan="12"><i>Open-source</i></td>
+                            </tr>
+
+                            <tr>
+                                <td>Wan2.2_A14B</td>
+                                <td>8</td>
+                                <td>0.507</td>
+                                <td>0.381</td>
+                                <td>0.454</td>
+                                <td>0.373</td>
+                                <td>0.501</td>
+                                <td>0.330</td>
+                                <td>0.608</td>
+                                <td>0.582</td>
+                                <td>0.690</td>
+                                <td>0.648</td>
+                            </tr>
+
+                            <tr>
+                                <td>HunyuanVideo 1.5</td>
+                                <td>10</td>
+                                <td>0.460</td>
+                                <td>0.442</td>
+                                <td>0.316</td>
+                                <td>0.312</td>
+                                <td>0.438</td>
+                                <td>0.364</td>
+                                <td>0.513</td>
+                                <td>0.526</td>
+                                <td>0.634</td>
+                                <td>0.595</td>
+                            </tr>
+
+                            <tr>
+                                <td>LongCat-Video</td>
+                                <td>11</td>
+                                <td>0.437</td>
+                                <td>0.372</td>
+                                <td>0.310</td>
+                                <td>0.220</td>
+                                <td>0.384</td>
+                                <td>0.186</td>
+                                <td>0.586</td>
+                                <td>0.576</td>
+                                <td>0.681</td>
+                                <td>0.621</td>
+                            </tr>
+
+                            <tr>
+                                <td>Wan2.1_14B</td>
+                                <td>14</td>
+                                <td>0.399</td>
+                                <td>0.344</td>
+                                <td>0.268</td>
+                                <td>0.282</td>
+                                <td>0.335</td>
+                                <td>0.205</td>
+                                <td>0.464</td>
+                                <td>0.497</td>
+                                <td>0.595</td>
+                                <td>0.599</td>
+                            </tr>
+
+                            <tr>
+                                <td>LTX-2</td>
+                                <td>15</td>
+                                <td>0.381</td>
+                                <td>0.284</td>
+                                <td>0.304</td>
+                                <td>0.233</td>
+                                <td>0.386</td>
+                                <td>0.164</td>
+                                <td>0.453</td>
+                                <td>0.424</td>
+                                <td>0.622</td>
+                                <td>0.555</td>
+                            </tr>
+
+                            <tr>
+                                <td>Wan2.2_5B</td>
+                                <td>16</td>
+                                <td>0.380</td>
+                                <td>0.331</td>
+                                <td>0.313</td>
+                                <td>0.142</td>
+                                <td>0.318</td>
+                                <td>0.234</td>
+                                <td>0.436</td>
+                                <td>0.448</td>
+                                <td>0.590</td>
+                                <td>0.607</td>
+                            </tr>
+
+                            <tr>
+                                <td>SkyReels</td>
+                                <td>18</td>
+                                <td>0.361</td>
+                                <td>0.203</td>
+                                <td>0.276</td>
+                                <td>0.203</td>
+                                <td>0.254</td>
+                                <td>0.234</td>
+                                <td>0.507</td>
+                                <td>0.477</td>
+                                <td>0.586</td>
+                                <td>0.509</td>
+                            </tr>
+
+                            <tr>
+                                <td>LTX-Video</td>
+                                <td>19</td>
+                                <td>0.344</td>
+                                <td>0.302</td>
+                                <td>0.176</td>
+                                <td>0.210</td>
+                                <td>0.280</td>
+                                <td>0.241</td>
+                                <td>0.440</td>
+                                <td>0.456</td>
+                                <td>0.526</td>
+                                <td>0.464</td>
+                            </tr>
+
+                            <tr>
+                                <td>FramePack</td>
+                                <td>20</td>
+                                <td>0.339</td>
+                                <td>0.206</td>
+                                <td>0.258</td>
+                                <td>0.173</td>
+                                <td>0.169</td>
+                                <td>0.170</td>
+                                <td>0.440</td>
+                                <td>0.464</td>
+                                <td>0.626</td>
+                                <td>0.548</td>
+                            </tr>
+
+                            <tr>
+                                <td>HunyuanVideo</td>
+                                <td>21</td>
+                                <td>0.303</td>
+                                <td>0.177</td>
+                                <td>0.180</td>
+                                <td>0.108</td>
+                                <td>0.147</td>
+                                <td>0.035</td>
+                                <td>0.454</td>
+                                <td>0.480</td>
+                                <td>0.625</td>
+                                <td>0.524</td>
+                            </tr>
+
+                            <tr>
+                                <td>CogVideoX_5B</td>
+                                <td>23</td>
+                                <td>0.256</td>
+                                <td>0.116</td>
+                                <td>0.112</td>
+                                <td>0.098</td>
+                                <td>0.212</td>
+                                <td>0.079</td>
+                                <td>0.338</td>
+                                <td>0.385</td>
+                                <td>0.465</td>
+                                <td>0.496</td>
+                            </tr>
+
+
+                            <!-- ====================== COMMERCIAL ====================== -->
+                            <tr class="rbench-category">
+                                <td colspan="12"><i>Commercial</i></td>
+                            </tr>
+
+                            <tr>
+                                <td>Wan 2.6</td>
+                                <td class="top1">1</td>
+                                <td>0.607</td>
+                                <td>0.546</td>
+                                <td class="sub1">0.656</td>
+                                <td>0.479</td>
+                                <td>0.514</td>
+                                <td class="sub1">0.531</td>
+                                <td>0.666</td>
+                                <td class="sub1">0.681</td>
+                                <td>0.723</td>
+                                <td>0.667</td>
+                            </tr>
+
+                            <tr>
+                                <td>Seedance 1.5 Pro</td>
+                                <td class="top2">2</td>
+                                <td>0.584</td>
+                                <td class="sub1">0.577</td>
+                                <td>0.495</td>
+                                <td class="sub1">0.484</td>
+                                <td class="sub1">0.570</td>
+                                <td>0.470</td>
+                                <td>0.648</td>
+                                <td>0.641</td>
+                                <td>0.680</td>
+                                <td class="sub1">0.692</td>
+                            </tr>
+
+                            <tr>
+                                <td>Wan 2.5</td>
+                                <td class="top3">3</td>
+                                <td>0.570</td>
+                                <td>0.527</td>
+                                <td>0.576</td>
+                                <td>0.402</td>
+                                <td>0.496</td>
+                                <td>0.437</td>
+                                <td class="sub1">0.680</td>
+                                <td>0.634</td>
+                                <td class="sub1">0.726</td>
+                                <td>0.654</td>
+                            </tr>
+
+                            <tr>
+                                <td>Hailuo v2</td>
+                                <td>4</td>
+                                <td>0.565</td>
+                                <td>0.560</td>
+                                <td>0.637</td>
+                                <td>0.386</td>
+                                <td>0.545</td>
+                                <td>0.474</td>
+                                <td>0.594</td>
+                                <td>0.611</td>
+                                <td>0.640</td>
+                                <td>0.635</td>
+                            </tr>
+
+                            <tr>
+                                <td>Veo 3</td>
+                                <td>5</td>
+                                <td>0.563</td>
+                                <td>0.521</td>
+                                <td>0.508</td>
+                                <td>0.430</td>
+                                <td>0.530</td>
+                                <td>0.504</td>
+                                <td>0.634</td>
+                                <td>0.610</td>
+                                <td>0.689</td>
+                                <td>0.637</td>
+                            </tr>
+
+                            <tr>
+                                <td>Seedance 1.0</td>
+                                <td>6</td>
+                                <td>0.551</td>
+                                <td>0.542</td>
+                                <td>0.425</td>
+                                <td>0.448</td>
+                                <td>0.454</td>
+                                <td>0.442</td>
+                                <td>0.622</td>
+                                <td>0.641</td>
+                                <td>0.698</td>
+                                <td>0.686</td>
+                            </tr>
+
+                            <tr>
+                                <td>Kling 2.6 Pro</td>
+                                <td>7</td>
+                                <td>0.534</td>
+                                <td>0.529</td>
+                                <td>0.598</td>
+                                <td>0.364</td>
+                                <td>0.530</td>
+                                <td>0.358</td>
+                                <td>0.570</td>
+                                <td>0.605</td>
+                                <td>0.637</td>
+                                <td>0.613</td>
+                            </tr>
+
+                            <tr>
+                                <td>Sora v2 Pro<sup>#</sup></td>
+                                <td>17</td>
+                                <td>0.362</td>
+                                <td>0.208</td>
+                                <td>0.268</td>
+                                <td>0.186</td>
+                                <td>0.255</td>
+                                <td>0.115</td>
+                                <td>0.476</td>
+                                <td>0.513</td>
+                                <td>0.664</td>
+                                <td>0.561</td>
+                            </tr>
+
+                            <tr>
+                                <td>Sora v1</td>
+                                <td>22</td>
+                                <td>0.266</td>
+                                <td>0.151</td>
+                                <td>0.223</td>
+                                <td>0.111</td>
+                                <td>0.166</td>
+                                <td>0.139</td>
+                                <td>0.314</td>
+                                <td>0.324</td>
+                                <td>0.544</td>
+                                <td>0.419</td>
+                            </tr>
+
+
+                            <!-- ====================== ROBOTICS-SPECIFIC ====================== -->
+                            <tr class="rbench-category">
+                                <td colspan="12"><i>Robotics-specific</i></td>
+                            </tr>
+
+                            <tr>
+                                <td>Cosmos 2.5</td>
+                                <td>9</td>
+                                <td>0.464</td>
+                                <td>0.358</td>
+                                <td>0.338</td>
+                                <td>0.201</td>
+                                <td>0.496</td>
+                                <td>0.399</td>
+                                <td>0.544</td>
+                                <td>0.560</td>
+                                <td>0.658</td>
+                                <td>0.626</td>
+                            </tr>
+
+                            <tr>
+                                <td>DreamGen(gr1)</td>
+                                <td>12</td>
+                                <td>0.420</td>
+                                <td>0.312</td>
+                                <td>0.372</td>
+                                <td>0.297</td>
+                                <td>0.334</td>
+                                <td>0.215</td>
+                                <td>0.564</td>
+                                <td>0.532</td>
+                                <td>0.579</td>
+                                <td>0.575</td>
+                            </tr>
+
+                            <tr>
+                                <td>DreamGen(droid)</td>
+                                <td>13</td>
+                                <td>0.405</td>
+                                <td>0.358</td>
+                                <td>0.348</td>
+                                <td>0.214</td>
+                                <td>0.316</td>
+                                <td>0.339</td>
+                                <td>0.499</td>
+                                <td>0.476</td>
+                                <td>0.542</td>
+                                <td>0.556</td>
+                            </tr>
+
+                            <tr>
+                                <td>Vidar</td>
+                                <td>24</td>
+                                <td>0.206</td>
+                                <td>0.073</td>
+                                <td>0.106</td>
+                                <td>0.050</td>
+                                <td>0.054</td>
+                                <td>0.050</td>
+                                <td>0.382</td>
+                                <td>0.410</td>
+                                <td>0.374</td>
+                                <td>0.357</td>
+                            </tr>
+
+                            <tr>
+                                <td>UnifoLM-WMA-0</td>
+                                <td>25</td>
+                                <td>0.123</td>
+                                <td>0.036</td>
+                                <td>0.040</td>
+                                <td>0.018</td>
+                                <td>0.062</td>
+                                <td>0.000</td>
+                                <td>0.268</td>
+                                <td>0.194</td>
+                                <td>0.293</td>
+                                <td>0.200</td>
+                            </tr>
+
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================== -->
+        <!--  SECTION: Failure Case Analysis                        -->
+        <!-- ========================================================== -->
+
+        <section id="failure-demo" style="margin-top:100px;">
+
+            <h3 style="text-align:center; font-size:2rem; color:white; margin-bottom:20px;">
+                Automatic Evaluation for Various Robotic Scenarios
+            </h3>
+
+            <!-- Category buttons -->
+            <div class="task-selector">
+                <button class="fail-btn active" data-cat="physics">Physical Law Violation</button>
+                <button class="fail-btn" data-cat="count">Quantity Anomaly</button>
+                <button class="fail-btn" data-cat="stability">Robot-Subject Stability</button>
+                <button class="fail-btn" data-cat="task">Task-Adherence Consistency</button>
+            </div>
+
+            <!-- Header: first frame + prompt -->
+            <div id="failure-header" class="case-header"></div>
+
+            <!-- Video wrapper -->
+            <div class="video-wrapper">
+
+                <button id="fail-prev" class="case-btn left-btn">❮</button>
+
+                <div id="failure-video-container" class="failure-grid"></div>
+
+                <button id="fail-next" class="case-btn right-btn">❯</button>
+
+            </div>
+
+        </section>
+        <style>
+            .failure-grid {
+                display: flex;
+                gap: 56px;
+                justify-content: center;
+            }
+
+            .failure-item {
+                width: 480px;
+                position: relative;
+            }
+
+            .failure-item video {
+                width: 100%;
+                border-radius: 12px;
+            }
+
+            .fail-tag {
+                position: absolute;
+                top: 12px;
+                left: 12px;
+
+                font-size: 2.8rem;
+                font-weight: 700;
+                z-index: 10;
+
+                background: rgba(0, 0, 0, 0.55);
+                border-radius: 50%;
+
+                width: 48px;
+                height: 48px;
+
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+
+            .fail-tag.bad {
+                color: #ff4d4f;
+                /* red */
+            }
+
+            .fail-tag.good {
+                color: #52c41a;
+                /* green */
+            }
+
+
+            .failure-pair {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .fail-caption {
+                margin-top: 14px;
+                font-size: 1.15rem;
+                color: #ddd;
+                text-align: center;
+                font-weight: 500;
+            }
+        </style>
+        <script>
+            /* ===================== Failure Case Config ===================== */
+            const failure_prompts = {
+                non_contact_attachment: "The robotic gripper picks up the empty plastic cup on the table.",
+                floating_robot: "The robot gripper picks up the blue piece of clothing from the floor and places it into the hollow laundry basket.",
+
+                newly_appearing_object: "The robotic gripper closes the drawer of the black cabinet.",
+                robot_duplication: "The humanoid robot turns left and ascends the stairs.",
+
+                subject_shape_distoration: "The robot picks up the tallest orange object and places it into the basket.",
+                robot_claw_to_human_hand: "The left robotic gripper places the cup under the white dispenser labeled “Jasmine Tea”, and the right robotic gripper opens the dispenser to pour jasmine tea into the cup.",
+
+                missing_key_action: "The robotic arms turn on the faucet and fill the glass with water.",
+                task_response_failure: "The dual robotic arms cooperate to paint the wall using the brush."
+            };
+
+            const failure_cases = {
+                physics: [
+                    {
+                        name: "floating_robot",
+                        label: "Floating Robot Component"
+                    },
+                    {
+                        name: "non_contact_attachment",
+                        label: "Non-contact Attachment"
+                    }
+
+                ],
+                count: [
+                    {
+                        name: "newly_appearing_object",
+                        label: "Newly Appearing Object"
+                    },
+                    {
+                        name: "robot_duplication",
+                        label: "Robot Duplication"
+                    }
+                ],
+                stability: [
+                    {
+                        name: "robot_claw_to_human_hand",
+                        label: "Robot Claw → Human Hand"
+                    },
+                    {
+                        name: "subject_shape_distoration",
+                        label: "Subject Shape Distortion"
+                    }
+
+                ],
+                task: [
+                    {
+                        name: "missing_key_action",
+                        label: "Missing Key Action"
+                    },
+                    {
+                        name: "task_response_failure",
+                        label: "Task Response Failure"
+                    }
+                ]
+            };
+
+            /* ===================== State ===================== */
+
+            let currentFailCat = "physics";
+            let currentFailIdx = 0;
+
+            /* ===================== Render ===================== */
+
+            function updateFailureDisplay() {
+
+                const caseInfo = failure_cases[currentFailCat][currentFailIdx];
+                const caseName = caseInfo.name;
+
+                /* ---- header ---- */
+                const header = document.getElementById("failure-header");
+                const framePath = `./initial_frames/cases/${caseName}.jpg`;
+                const promptText = failure_prompts[caseName] || "";
+
+                header.innerHTML = `
+    <img src="${framePath}" alt="Failure First Frame">
+    <div class="prompt-box">
+        ${promptText}
+    </div>
+`;
+
+                /* ---- videos ---- */
+                const container = document.getElementById("failure-video-container");
+                container.innerHTML = "";
+
+                /* outer wrapper */
+                const pair = document.createElement("div");
+                pair.className = "failure-pair";
+
+                /* grid for two videos */
+                const grid = document.createElement("div");
+                grid.className = "failure-grid";
+
+                ["bad", "good"].forEach((type, idx) => {
+
+                    const videoPath = `./videos/Cases/${caseName}_${idx}.mp4`;
+
+                    const item = document.createElement("div");
+                    item.className = "failure-item";
+
+                    item.innerHTML = `
+        <div class="fail-tag ${type}">
+            ${type === "bad" ? "✖" : "✔"}
+        </div>
+        <video autoplay muted loop playsinline>
+            <source src="${videoPath}" type="video/mp4">
+        </video>
+    `;
+
+                    grid.appendChild(item);
+                });
+
+                /* shared caption */
+                const caption = document.createElement("div");
+                caption.className = "fail-caption";
+                caption.innerText = caseInfo.label;
+
+                /* assemble */
+                pair.appendChild(grid);
+                pair.appendChild(caption);
+                container.appendChild(pair);
+
+            }
+
+            /* ===================== Events ===================== */
+
+            /* category buttons */
+            document.querySelectorAll(".fail-btn").forEach(btn => {
+                btn.addEventListener("click", function () {
+
+                    document.querySelectorAll(".fail-btn")
+                        .forEach(b => b.classList.remove("active"));
+                    this.classList.add("active");
+
+                    currentFailCat = this.dataset.cat;
+                    currentFailIdx = 0;
+                    updateFailureDisplay();
+                });
+            });
+
+            /* arrow navigation */
+            document.getElementById("fail-prev").addEventListener("click", () => {
+                const total = failure_cases[currentFailCat].length;
+                currentFailIdx = (currentFailIdx - 1 + total) % total;
+                updateFailureDisplay();
+            });
+
+            document.getElementById("fail-next").addEventListener("click", () => {
+                const total = failure_cases[currentFailCat].length;
+                currentFailIdx = (currentFailIdx + 1) % total;
+                updateFailureDisplay();
+            });
+
+            /* init */
+            updateFailureDisplay();
+        </script>
+
+
+        <!-- ========================= -->
+        <!--   Statistics in RBench   -->
+        <!-- ========================= -->
+
+        <section id="benchmark-statistics" style="max-width: 1200px; margin: 80px auto; padding: 0 20px;">
+
+            <h3 style="text-align:center; color:white; font-size: 2rem; margin-bottom: 20px;">
+                Overview of RBench Statistics
+            </h3>
+
+            <p style="
+color: #ccc;
+font-size: 1.1rem;
+line-height: 1.6;
+text-align: left;
+text-indent: 2em;
+max-width: 1000px;
+margin: 0 auto 25px auto;
+">
+            </p>
+
+            <!-- Benchmark Statistics Image -->
+            <div style="
+width: 100%;
+display: flex;
+justify-content: center;
+border-radius: 12px;
+">
+                <img src="./png/benchmark.png" alt="R-Bench Statistics" style="
+        width: 100%;
+        max-width: 1100px;
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(255,255,255,0.1);
+    ">
+            </div>
+
+            <!-- ========================= -->
+            <!--         RoVidX-4M         -->
+            <!-- ========================= -->
+        </section>
+        <section id="dataset-table" class="dataset-table-section"
+            style="max-width: 1200px; margin: 80px auto; padding: 0 20px;">
+
+            <h3 style="text-align:center; color:white; font-size: 2rem; margin-bottom: 20px;">
+                Comparison of Representative Robotic Video Datasets
+            </h3>
+            <div class="rbench-card">
+                <div style="overflow-x:auto;">
+                    <table>
+
+                        <thead>
+                            <tr>
+                                <th>Dataset</th>
+                                <th>Year</th>
+                                <th>#Videos</th>
+                                <th>#Skills</th>
+                                <th>Resolution</th>
+                                <th>Optical Flow</th>
+                                <th>Diverse Robotic Forms</th>
+                                <th>Diverse Captions</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            <tr>
+                                <td>RoboTurk</td>
+                                <td>2018</td>
+                                <td>2.1k</td>
+                                <td>2</td>
+                                <td>480P</td>
+                                <td><span class="cross">✗</span></td>
+                                <td><span class="cross">✗</span></td>
+                                <td><span class="cross">✗</span></td>
+                            </tr>
+
+                            <tr>
+                                <td>RoboNet</td>
+                                <td>2019</td>
+                                <td>162k</td>
+                                <td>N/A</td>
+                                <td>240P</td>
+                                <td><span class="cross">✗</span></td>
+                                <td><span class="cross">✗</span></td>
+                                <td><span class="cross">✗</span></td>
+                            </tr>
+
+                            <tr>
+                                <td>BridgeData</td>
+                                <td>2021</td>
+                                <td>7.2k</td>
+                                <td>4</td>
+                                <td>480P</td>
+                                <td><span class="cross">✗</span></td>
+                                <td><span class="cross">✗</span></td>
+                                <td><span class="cross">✗</span></td>
+                            </tr>
+
+                            <tr>
+                                <td>RH20T</td>
+                                <td>2023</td>
+                                <td>13k</td>
+                                <td>33</td>
+                                <td>720P</td>
+                                <td><span class="cross">✗</span></td>
+                                <td><span class="cross">✗</span></td>
+                                <td><span class="cross">✗</span></td>
+                            </tr>
+
+                            <tr>
+                                <td>DROID</td>
+                                <td>2024</td>
+                                <td>76k</td>
+                                <td>86</td>
+                                <td>720P</td>
+                                <td><span class="cross">✗</span></td>
+                                <td><span class="cross">✗</span></td>
+                                <td><span class="cross">✗</span></td>
+                            </tr>
+
+                            <tr>
+                                <td>Open X-Embodiment</td>
+                                <td>2024</td>
+                                <td>1.4M</td>
+                                <td>217</td>
+                                <td>64P—720P</td>
+                                <td><span class="cross">✗</span></td>
+                                <td><span class="check">✓</span></td>
+                                <td><span class="cross">✗</span></td>
+                            </tr>
+                            <tr>
+                                <td>RoboMIND</td>
+                                <td>2024</td>
+                                <td>107k</td>
+                                <td>38</td>
+                                <td>480P</td>
+                                <td><span class="cross">✗</span></td>
+                                <td><span class="cross">✗</span></td>
+                                <td><span class="cross">✗</span></td>
+                            </tr>
+                            <tr>
+                                <td>RoboCOIN</td>
+                                <td>2025</td>
+                                <td>180k</td>
+                                <td>36</td>
+                                <td>480P</td>
+                                <td><span class="cross">✗</span></td>
+                                <td><span class="cross">✗</span></td>
+                                <td><span class="cross">✗</span></td>
+                            </tr>
+                            <tr>
+                                <td>Galaxea</td>
+                                <td>2025</td>
+                                <td>100k</td>
+                                <td>58</td>
+                                <td>720P</td>
+                                <td><span class="cross">✗</span></td>
+                                <td><span class="cross">✗</span></td>
+                                <td><span class="cross">✗</span></td>
+                            </tr>
+                            <tr>
+                                <td>InternData-A1</td>
+                                <td>2025</td>
+                                <td>630k</td>
+                                <td>18</td>
+                                <td>480P</td>
+                                <td><span class="cross">✗</span></td>
+                                <td><span class="cross">✗</span></td>
+                                <td><span class="cross">✗</span></td>
+                            </tr>
+                            <tr>
+                                <td>Fourier ActionNet</td>
+                                <td>2025</td>
+                                <td>13k</td>
+                                <td>16</td>
+                                <td>800P</td>
+                                <td><span class="cross">✗</span></td>
+                                <td><span class="cross">✗</span></td>
+                                <td><span class="cross">✗</span></td>
+                            </tr>
+
+                            <tr>
+                                <td>Humanoid Everyday</td>
+                                <td>2025</td>
+                                <td>10.3k</td>
+                                <td>221</td>
+                                <td>320P—720P</td>
+                                <td><span class="cross">✗</span></td>
+                                <td><span class="cross">✗</span></td>
+                                <td><span class="cross">✗</span></td>
+                            </tr>
+
+                            <tr>
+                                <td>Agibot World</td>
+                                <td>2025</td>
+                                <td>1M</td>
+                                <td>87</td>
+                                <td>480P</td>
+                                <td><span class="cross">✗</span></td>
+                                <td><span class="cross">✗</span></td>
+                                <td><span class="cross">✗</span></td>
+                            </tr>
+
+                            <!-- Ours Row -->
+                            <tr class="dataset-ours">
+                                <td>RoVid-X (Ours)</td>
+                                <td>2026</td>
+                                <td>4M</td>
+                                <td>1300+</td>
+                                <td>720P</td>
+                                <td><span class="check">✓</span></td>
+                                <td><span class="check">✓</span></td>
+                                <td><span class="check">✓</span></td>
+                            </tr>
+
+                        </tbody>
+
+                    </table>
+                </div>
+            </div>
+        </section>
+        <!-- ===============================
+     Caption Granularity Demo Section
+     =============================== -->
+        <section id="caption-demo" style="margin: 80px auto; max-width: 1600px; text-align: center;">
+
+            <h3 style="text-align:center; color:white; font-size: 2rem; margin-bottom: 20px;">
+                RoVid-X: Diverse Robotics Video Data and Caption Demonstration
+            </h3>
+
+            <!-- Diverse Caption Label -->
+            <div style="
+ max-width: 1400px;
+ margin: 20px auto 14px auto;
+ text-align: center;
+ font-size: 22px;
+ font-weight: 700;
+ letter-spacing: 0.8px;
+ color: #dddddd;
+ ">
+                Diverse Data
+            </div>
+            <!-- Video -->
+            <div style="
+        display: flex;
+        justify-content: center;
+        margin-bottom: 26px;
+    ">
+                <video src="videos/0_grid_output_show.mp4" autoplay loop muted playsinline controls style="
+                width: 95vw;
+                max-width: 1400px;
+                border-radius: 16px;
+                border: 3px solid #ffffff33;
+                background: black;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            ">
+                </video>
+            </div>
+            <!-- Diverse Caption Label -->
+            <div style="
+max-width: 1400px;
+margin: 20px auto 14px auto;
+text-align: center;
+font-size: 22px;
+font-weight: 700;
+letter-spacing: 0.8px;
+color: #dddddd;
+">
+                Diverse Caption
+            </div>
+
+            <!-- Captions: Line-by-Line -->
+            <div style="
+        max-width: 1400px;
+        margin: 0 auto;
+        text-align: left;
+        font-size: 20px;
+        line-height: 1.8;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    ">
+
+                <!-- Level 1 -->
+                <div>
+                    <span style="
+                font-weight: 600;
+                margin-right: 14px;
+                color: #8fd3f4;
+                white-space: nowrap;
+            ">
+                        Task caption:
+                    </span>
+                    <span style="color: #eaeaea;">
+                        pick up the blue cup and place it into the bowl
+                    </span>
+                </div>
+
+                <!-- Level 2 -->
+                <div>
+                    <span style="
+                font-weight: 600;
+                margin-right: 14px;
+                color: #a3e635;
+                white-space: nowrap;
+            ">
+                        Short caption:
+                    </span>
+                    <span style="color: #eaeaea;">
+                        The robot uses its right arm to pick up the blue cup and places it into the bowl on the table.
+                    </span>
+                </div>
+
+                <!-- Level 3 -->
+                <div>
+                    <span style="
+                font-weight: 600;
+                margin-right: 14px;
+                color: #fbbf24;
+                white-space: nowrap;
+            ">
+                        Detailed caption:
+                    </span>
+                    <span style="color: #eaeaea;">
+                        The video opens with a top-down view of a table covered in a red-and-white checkered tablecloth,
+                        featuring a pink bowl at its center and a blue mug to the right. Two robotic arms are positioned
+                        over the table—one on the left remains stationary, while the right arm hovers near the mug. The
+                        background includes a white backdrop, a person in a cartoon-patterned sweater, and a desk
+                        cluttered with computers and electronics. The right robotic arm’s gripper closes around the blue
+                        mug, lifting it smoothly. It moves the mug horizontally to align with the pink bowl’s center,
+                        then lowers it gently into the bowl. After ensuring the mug is securely placed, the gripper
+                        releases, and the right arm retracts to its starting position. The left arm stays motionless
+                        throughout. By the end, the blue mug rests inside the pink bowl, completing the task. The robot
+                        demonstrates precise object manipulation and accurate pick-and-place capabilities, with the
+                        background elements remaining consistent as the focus stays on the arm’s deliberate actions.
+                    </span>
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+
+        <!-- ===================================================== -->
+        <!--   Overview of RoVidX-4M Construction & Statistics     -->
+        <!-- ===================================================== -->
+
+        <section id="rovidx-overview" style="max-width: 1200px; margin: 80px auto; padding: 0 20px;">
+
+            <h3 style="text-align:center; color:white; font-size: 2rem; margin-bottom: 20px;">
+                Overview of RoVid-X Construction and Statistics
+            </h3>
+
+            <p style="
+color: #ccc;
+font-size: 1.1rem;
+line-height: 1.6;
+text-align: left;
+text-indent: 2em;
+max-width: 1000px;
+margin: 0 auto 25px auto;
+">
+
+            </p>
+
+            <!-- RoVidX-4M Image -->
+            <div style="
+width: 100%;
+display: flex;
+justify-content: center;
+border-radius: 12px;
+">
+                <img src="./png/datapipeline.png" alt="RoVidX-4M Overview" style="
+        width: 100%;
+        max-width: 1100px;
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(255,255,255,0.1);
+    ">
+            </div>
+        </section>
+
+        <section class="ethics-section">
+            <h3>Ethics Concerns</h3>
+            <p>
+                All videos featured in these demos are either generated by models or sourced from publicly available
+                datasets, and are intended solely for the purpose of demonstrating the technical capabilities of our
+                research. If you believe any content infringes upon rights or raises ethical concerns, please contact us
+                at
+                dengyufan10@stu.pku.edu.cn, we will address the issue and remove the material promptly.
+            </p>
+        </section>
+
+        <section class="bibtex-section">
+            <h3>BibTeX</h3>
+            <pre class="bibtex-code">@article{deng2025rethinking,
+    title={Rethinking Video Generation Model for the Embodied World},
+    author={Deng, Yufan and Pan, Zilin and Zhang, Frank and Ding, yufei and Zou, Yiming and Zhou, Daquan},
+    journal={arXiv preprint arXiv:2512.23742},
+    year={2025}
+    }</pre>
+        </section>
+
+</html>
